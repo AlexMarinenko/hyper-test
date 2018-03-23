@@ -25,11 +25,10 @@ impl Service {
         let thread = thread::spawn(move || {
             let mut core = Core::new().unwrap();
             let handle = core.handle();
-            //let client = Client::new(&core.handle());
             let client = Client::configure()
-                .connector(HttpConnector::new(4,&handle))
+                .connector(HttpConnector::new(4, &handle))
                 .build(&handle);
-            let f = rx.for_each(|xml:String|{
+            let fut = rx.for_each(|xml : String| {
                 let uri: Uri = "http://www.asmsoft.ru/xml/1.php".parse().unwrap();
                 let mut req = Request::new(Method::Post, uri.clone());
                 req.headers_mut().set(ContentType::xml());
@@ -39,10 +38,10 @@ impl Service {
                     println!("Got result1: {:?}", res);
                     ()
                 }).map_err(drop);
-                post
+                handle.spawn(post);
+                Ok(())
             });
-
-            core.run(f).unwrap();
+            core.run(fut).unwrap();
         });
         Service {
             _thread: thread,
@@ -58,6 +57,13 @@ impl Service {
 
 fn main() {
     let service = Service::new();
+    service.handle_commit("<xml>".to_owned());
+    service.handle_commit("<xml>".to_owned());
+    service.handle_commit("<xml>".to_owned());
+    service.handle_commit("<xml>".to_owned());
+    service.handle_commit("<xml>".to_owned());
+    service.handle_commit("<xml>".to_owned());
+    service.handle_commit("<xml>".to_owned());
     service.handle_commit("<xml>".to_owned());
     println!("Finish.");
 
